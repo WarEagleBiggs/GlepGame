@@ -3,23 +3,19 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 public class TopDownPlayerController : MonoBehaviour
 {
-    [Header("refs")]
-    public Transform gfxRoot;              // assign: a child transform that holds sprite + eye + visuals
-    public SpriteRenderer spriteRenderer;  // optional (auto-find under gfxRoot)
-    public Transform eye;                 // assign (child under gfxRoot)
-    public Camera mainCamera;             // usually leave null -> auto Camera.main
+    public Transform gfxRoot;
+    public SpriteRenderer spriteRenderer;
+    public Transform eye;
+    public Camera mainCamera;
 
-    [Header("move")]
     public float moveSpeed = 6.0f;
     public float sprintMultiplier = 1.6f;
     public float acceleration = 35.0f;
     public float deceleration = 45.0f;
 
-    [Header("mirror")]
-    public float mirrorDeadzone = 0.05f;  // avoid flicker when barely moving
+    public float mirrorDeadzone = 0.05f;
 
-    [Header("eye")]
-    public float eyeTurnSpeed = 720f;     // degrees/sec
+    public float eyeTurnSpeed = 720f;
 
     Rigidbody2D rb;
     Vector2 input;
@@ -29,8 +25,7 @@ public class TopDownPlayerController : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         if (!mainCamera) mainCamera = Camera.main;
-
-        if (!gfxRoot) gfxRoot = transform; // fallback, but you should assign a dedicated child
+        if (!gfxRoot) gfxRoot = transform;
         if (!spriteRenderer) spriteRenderer = gfxRoot.GetComponentInChildren<SpriteRenderer>();
 
         rb.gravityScale = 0f;
@@ -46,14 +41,11 @@ public class TopDownPlayerController : MonoBehaviour
         bool sprinting = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         float speed = sprinting ? moveSpeed * sprintMultiplier : moveSpeed;
 
-        // flip ALL visuals by scaling gfxRoot on X (recommended rig)
         if (gfxRoot)
         {
             Vector3 s = gfxRoot.localScale;
-
-            if (input.x > mirrorDeadzone) s.x = -Mathf.Abs(s.x);       // kept your earlier flip direction
+            if (input.x > mirrorDeadzone) s.x = -Mathf.Abs(s.x);
             else if (input.x < -mirrorDeadzone) s.x = Mathf.Abs(s.x);
-
             gfxRoot.localScale = s;
         }
 
@@ -70,16 +62,18 @@ public class TopDownPlayerController : MonoBehaviour
 
     void UpdateEyeRotation()
     {
-        if (!eye || !mainCamera) return;
+        if (!eye || !mainCamera || !gfxRoot) return;
 
         Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-        Vector2 dir = (Vector2)(mouseWorld - eye.position);
+        Vector3 mouseLocal = gfxRoot.InverseTransformPoint(new Vector3(mouseWorld.x, mouseWorld.y, gfxRoot.position.z));
+        Vector3 eyeLocal = eye.localPosition;
+        Vector2 dir = mouseLocal - eyeLocal;
 
         float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
         Quaternion targetRot = Quaternion.Euler(0f, 0f, angle);
 
-        eye.rotation = Quaternion.RotateTowards(
-            eye.rotation,
+        eye.localRotation = Quaternion.RotateTowards(
+            eye.localRotation,
             targetRot,
             eyeTurnSpeed * Time.deltaTime
         );
