@@ -10,6 +10,7 @@ public class PressurePlate : MonoBehaviour
     public Color poweredColor = Color.red;
 
     public bool isDoor;
+    public bool isPlatform;
 
     public Transform doorLeft;
     public Transform doorRight;
@@ -17,7 +18,15 @@ public class PressurePlate : MonoBehaviour
     public float doorLeftOpenLocalX;
     public float doorRightOpenLocalX;
 
-    public float doorMoveSpeed = 6f;
+    public Transform platform;
+    public Collider2D platformTrigger;
+
+    public float platformUpLocalY;
+    public float moveSpeed = 6f;
+    public float platformPauseTop = 0.4f;
+    public float platformPauseBottom = 0.4f;
+
+    public GameObject heightCollider;
 
     Color buttonStartColor;
     Color[] lineStartColors;
@@ -25,10 +34,17 @@ public class PressurePlate : MonoBehaviour
     float doorLeftClosedLocalX;
     float doorRightClosedLocalX;
 
+    Vector3 platformStartLocalPos;
+    Vector3 platformLastWorldPos;
+    bool platformGoingUp = true;
+    float platformPauseTimer;
+
     bool pressed;
 
     MaterialPropertyBlock mpb;
     string colorProp;
+
+    PlatformRiderTracker riderTracker;
 
     void Awake()
     {
@@ -45,6 +61,22 @@ public class PressurePlate : MonoBehaviour
             if (doorRight) doorRightClosedLocalX = doorRight.localPosition.x;
         }
 
+        if (isPlatform && platform)
+        {
+            platformStartLocalPos = platform.localPosition;
+            platformLastWorldPos = platform.position;
+            platformPauseTimer = 0f;
+            platformGoingUp = true;
+
+            if (!platformTrigger) platformTrigger = platform.GetComponent<Collider2D>();
+
+            if (platformTrigger)
+            {
+                riderTracker = platformTrigger.GetComponent<PlatformRiderTracker>();
+                if (!riderTracker) riderTracker = platformTrigger.gameObject.AddComponent<PlatformRiderTracker>();
+            }
+        }
+
         mpb = new MaterialPropertyBlock();
 
         var m = buttonVisual ? buttonVisual.sharedMaterial : null;
@@ -55,23 +87,77 @@ public class PressurePlate : MonoBehaviour
 
     void Update()
     {
-        if (!isDoor) return;
-
-        if (doorLeft)
+        if (isDoor)
         {
-            float targetX = pressed ? doorLeftOpenLocalX : doorLeftClosedLocalX;
-            Vector3 p = doorLeft.localPosition;
-            p.x = Mathf.MoveTowards(p.x, targetX, doorMoveSpeed * Time.deltaTime);
-            doorLeft.localPosition = p;
+            if (doorLeft)
+            {
+                float targetX = pressed ? doorLeftOpenLocalX : doorLeftClosedLocalX;
+                Vector3 p = doorLeft.localPosition;
+                p.x = Mathf.MoveTowards(p.x, targetX, moveSpeed * Time.deltaTime);
+                doorLeft.localPosition = p;
+            }
+
+            if (doorRight)
+            {
+                float targetX = pressed ? doorRightOpenLocalX : doorRightClosedLocalX;
+                Vector3 p = doorRight.localPosition;
+                p.x = Mathf.MoveTowards(p.x, targetX, moveSpeed * Time.deltaTime);
+                doorRight.localPosition = p;
+            }
         }
 
-        if (doorRight)
+        if (isPlatform && heightCollider)
+            heightCollider.SetActive(!pressed);
+    }
+
+    void FixedUpdate()
+    {
+        if (!isPlatform || !platform) return;
+
+        Vector3 targetLocal = platform.localPosition;
+
+        if (!pressed)
         {
-            float targetX = pressed ? doorRightOpenLocalX : doorRightClosedLocalX;
-            Vector3 p = doorRight.localPosition;
-            p.x = Mathf.MoveTowards(p.x, targetX, doorMoveSpeed * Time.deltaTime);
-            doorRight.localPosition = p;
+            platformGoingUp = true;
+            platformPauseTimer = 0f;
+
+            targetLocal.y = Mathf.MoveTowards(platform.localPosition.y, platformStartLocalPos.y, moveSpeed * Time.fixedDeltaTime);
         }
+        else
+        {
+            if (platformPauseTimer > 0f)
+            {
+                platformPauseTimer -= Time.fixedDeltaTime;
+                if (platformPauseTimer < 0f) platformPauseTimer = 0f;
+            }
+            else
+            {
+                float goalY = platformGoingUp ? platformUpLocalY : platformStartLocalPos.y;
+                targetLocal.y = Mathf.MoveTowards(platform.localPosition.y, goalY, moveSpeed * Time.fixedDeltaTime);
+
+                if (Mathf.Abs(targetLocal.y - goalY) <= 0.001f)
+                {
+                    if (platformGoingUp)
+                    {
+                        platformGoingUp = false;
+                        platformPauseTimer = platformPauseTop;
+                    }
+                    else
+                    {
+                        platformGoingUp = true;
+                        platformPauseTimer = platformPauseBottom;
+                    }
+                }
+            }
+        }
+
+        platform.localPosition = targetLocal;
+
+        Vector2 delta = (Vector2)(platform.position - platformLastWorldPos);
+        if (delta.sqrMagnitude > 0f && riderTracker != null)
+            riderTracker.MoveRiders(delta);
+
+        platformLastWorldPos = platform.position;
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -108,5 +194,31 @@ public class PressurePlate : MonoBehaviour
         sr.GetPropertyBlock(mpb);
         mpb.SetColor(colorProp, c);
         sr.SetPropertyBlock(mpb);
+    }
+
+    class PlatformRiderTracker : MonoBehaviour
+    {
+        readonly HashSet<Rigidbody2D> riders = new HashSet<Rigidbody2D>();
+
+        void OnTriggerEnter2D(Collider2D other)
+        {
+            var rb = other.attachedRigidbody;
+            if (rb) riders.Add(rb);
+        }
+
+        void OnTriggerExit2D(Collider2D other)
+        {
+            var rb = other.attachedRigidbody;
+            if (rb) riders.Remove(rb);
+        }
+
+        public void MoveRiders(Vector2 delta)
+        {
+            foreach (var rb in riders)
+            {
+                if (!rb) continue;
+                rb.MovePosition(rb.position + delta);
+            }
+        }
     }
 }
