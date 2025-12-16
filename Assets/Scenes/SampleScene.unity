@@ -1264,6 +1264,7 @@ Transform:
   m_Children:
   - {fileID: 1066134508}
   - {fileID: 334423510}
+  - {fileID: 1219780902}
   m_Father: {fileID: 749530607}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &334423509
@@ -2289,6 +2290,10 @@ MonoBehaviour:
   deceleration: 45
   mirrorDeadzone: 0.05
   eyeTurnSpeed: 720
+  bulletPrefab: {fileID: 9110360382139218223, guid: 34a1064051bc4dc4ba6434a9dc4a272d, type: 3}
+  firePoint: {fileID: 1219780902}
+  bulletSpeed: 14
+  fireCooldown: 0.12
 --- !u!50 &749530610
 Rigidbody2D:
   serializedVersion: 4
@@ -4195,6 +4200,37 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!1 &1219780901
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1219780902}
+  m_Layer: 0
+  m_Name: ShootPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 7174288486110832750, guid: 0000000000000000d000000000000000, type: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1219780902
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1219780901}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -3.84, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 333385714}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1264628685
 GameObject:
   m_ObjectHideFlags: 0

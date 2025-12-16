@@ -14,12 +14,17 @@ public class TopDownPlayerController : MonoBehaviour
     public float deceleration = 45.0f;
 
     public float mirrorDeadzone = 0.05f;
-
     public float eyeTurnSpeed = 720f;
+
+    public GameObject bulletPrefab;
+    public Transform firePoint;
+    public float bulletSpeed = 14f;
+    public float fireCooldown = 0.12f;
 
     Rigidbody2D rb;
     Vector2 input;
     Vector2 targetVel;
+    float fireTimer;
 
     void Awake()
     {
@@ -52,6 +57,13 @@ public class TopDownPlayerController : MonoBehaviour
         targetVel = input * speed;
 
         UpdateEyeRotation();
+
+        fireTimer -= Time.deltaTime;
+        if (Input.GetMouseButton(0) && fireTimer <= 0f)
+        {
+            Fire();
+            fireTimer = fireCooldown;
+        }
     }
 
     void FixedUpdate()
@@ -72,10 +84,28 @@ public class TopDownPlayerController : MonoBehaviour
         float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
         Quaternion targetRot = Quaternion.Euler(0f, 0f, angle);
 
-        eye.localRotation = Quaternion.RotateTowards(
-            eye.localRotation,
-            targetRot,
-            eyeTurnSpeed * Time.deltaTime
-        );
+        eye.localRotation = Quaternion.RotateTowards(eye.localRotation, targetRot, eyeTurnSpeed * Time.deltaTime);
+    }
+
+    void Fire()
+    {
+        if (!bulletPrefab || !mainCamera) return;
+
+        Vector3 spawnPos = firePoint ? firePoint.position : transform.position;
+
+        Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Input.mousePosition);
+        Vector2 dir = ((Vector2)mouseWorld - (Vector2)spawnPos).normalized;
+        if (dir.sqrMagnitude < 0.0001f) dir = Vector2.right;
+
+        GameObject go = Instantiate(bulletPrefab, spawnPos, Quaternion.identity);
+
+        Rigidbody2D brb = go.GetComponent<Rigidbody2D>();
+        if (brb)
+        {
+            brb.gravityScale = 0f;
+            brb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+            brb.interpolation = RigidbodyInterpolation2D.Interpolate;
+            brb.velocity = dir * bulletSpeed;
+        }
     }
 }
