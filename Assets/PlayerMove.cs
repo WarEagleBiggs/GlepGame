@@ -5,13 +5,14 @@ public class TopDownPlayerController : MonoBehaviour
 {
     public Transform gfxRoot;
     public SpriteRenderer spriteRenderer;
+    public Animator animator;
+
     public Transform eye;
     public Camera mainCamera;
 
     public float moveSpeed = 6.0f;
     public float sprintMultiplier = 1.6f;
     public float acceleration = 35.0f;
-    public float deceleration = 45.0f;
 
     public float mirrorDeadzone = 0.05f;
     public float eyeTurnSpeed = 720f;
@@ -21,10 +22,13 @@ public class TopDownPlayerController : MonoBehaviour
     public float bulletSpeed = 14f;
     public float fireCooldown = 0.12f;
 
+    public float sprintAnimSpeed = 1.5f;
+
     Rigidbody2D rb;
     Vector2 input;
     Vector2 targetVel;
     float fireTimer;
+    bool isSprinting;
 
     void Awake()
     {
@@ -32,6 +36,7 @@ public class TopDownPlayerController : MonoBehaviour
         if (!mainCamera) mainCamera = Camera.main;
         if (!gfxRoot) gfxRoot = transform;
         if (!spriteRenderer) spriteRenderer = gfxRoot.GetComponentInChildren<SpriteRenderer>();
+        if (!animator && spriteRenderer) animator = spriteRenderer.GetComponent<Animator>();
 
         rb.gravityScale = 0f;
         rb.freezeRotation = true;
@@ -43,8 +48,8 @@ public class TopDownPlayerController : MonoBehaviour
         input = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
         input = Vector2.ClampMagnitude(input, 1f);
 
-        bool sprinting = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-        float speed = sprinting ? moveSpeed * sprintMultiplier : moveSpeed;
+        isSprinting = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        float speed = isSprinting ? moveSpeed * sprintMultiplier : moveSpeed;
 
         if (gfxRoot)
         {
@@ -68,8 +73,21 @@ public class TopDownPlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        float rate = (input.sqrMagnitude > 0.0001f) ? acceleration : deceleration;
-        rb.velocity = Vector2.MoveTowards(rb.velocity, targetVel, rate * Time.fixedDeltaTime);
+        if (input.sqrMagnitude < 0.0001f)
+        {
+            rb.velocity = Vector2.zero;
+        }
+        else
+        {
+            rb.velocity = Vector2.MoveTowards(rb.velocity, targetVel, acceleration * Time.fixedDeltaTime);
+        }
+
+        if (animator)
+        {
+            bool isWalking = input.sqrMagnitude > 0.01f;
+            animator.SetBool("isWalking", isWalking);
+            animator.speed = isWalking ? (isSprinting ? sprintAnimSpeed : 1f) : 1f;
+        }
     }
 
     void UpdateEyeRotation()

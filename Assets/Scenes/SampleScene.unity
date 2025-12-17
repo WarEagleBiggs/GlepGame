@@ -1293,7 +1293,7 @@ Transform:
   m_GameObject: {fileID: 334423509}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.314, y: 0.39, z: 0}
+  m_LocalPosition: {x: -0.29, y: 0.69, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1307,7 +1307,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 334423509}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -2212,7 +2212,7 @@ GameObject:
   m_Layer: 0
   m_Name: GLEP
   m_TagString: Player
-  m_Icon: {fileID: 2800000, guid: cfb4e35dd46f1ce478c8c029b58e0a8c, type: 3}
+  m_Icon: {fileID: 2800000, guid: 97661c9db738b1c4a95ed3c537145470, type: 3}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
@@ -2282,18 +2282,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gfxRoot: {fileID: 333385714}
   spriteRenderer: {fileID: 1066134509}
+  animator: {fileID: 1066134511}
   eye: {fileID: 334423510}
   mainCamera: {fileID: 519420031}
   moveSpeed: 10
   sprintMultiplier: 2
   acceleration: 35
-  deceleration: 45
   mirrorDeadzone: 0.05
   eyeTurnSpeed: 720
   bulletPrefab: {fileID: 9110360382139218223, guid: 34a1064051bc4dc4ba6434a9dc4a272d, type: 3}
   firePoint: {fileID: 1219780902}
   bulletSpeed: 14
   fireCooldown: 0.12
+  sprintAnimSpeed: 3
 --- !u!50 &749530610
 Rigidbody2D:
   serializedVersion: 4
@@ -2348,7 +2349,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0.119, y: 0, z: 0}
-  m_LocalScale: {x: 0.6937928, y: 0.6937928, z: 0.6937928}
+  m_LocalScale: {x: 0.77226084, y: 0.77226084, z: 0.77226084}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 334423510}
@@ -3598,6 +3599,7 @@ GameObject:
   - component: {fileID: 1066134508}
   - component: {fileID: 1066134509}
   - component: {fileID: 1066134510}
+  - component: {fileID: 1066134511}
   m_Layer: 0
   m_Name: Glep - Body
   m_TagString: Untagged
@@ -3614,7 +3616,7 @@ Transform:
   m_GameObject: {fileID: 1066134507}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.36, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3661,9 +3663,9 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 10
-  m_Sprite: {fileID: 21300000, guid: cfb4e35dd46f1ce478c8c029b58e0a8c, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 97661c9db738b1c4a95ed3c537145470, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_FlipX: 0
+  m_FlipX: 1
   m_FlipY: 0
   m_DrawMode: 0
   m_Size: {x: 1, y: 1}
@@ -3702,6 +3704,27 @@ MonoBehaviour:
   m_LocalBounds:
     m_Center: {x: -0.05734873, y: -0.49657977, z: 0}
     m_Extent: {x: 0.8940085, y: 1.7019421, z: 0}
+--- !u!95 &1066134511
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1066134507}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: b1f3af9d589f4f14798a263e90a6ab58, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &1087445497
 GameObject:
   m_ObjectHideFlags: 0
