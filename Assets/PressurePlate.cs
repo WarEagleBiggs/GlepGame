@@ -46,6 +46,9 @@ public class PressurePlate : MonoBehaviour
 
     PlatformRiderTracker riderTracker;
 
+    public AudioSource ButtonSFX;
+    public AudioSource ButtonSFX2;
+
     void Awake()
     {
         if (!buttonVisual) buttonVisual = GetComponentInChildren<SpriteRenderer>();
@@ -165,6 +168,8 @@ public class PressurePlate : MonoBehaviour
         if (!other.CompareTag("Player")) return;
 
         pressed = true;
+        
+        ButtonSFX.Play();
 
         Debug.Log("pressed do action");
 
@@ -178,6 +183,7 @@ public class PressurePlate : MonoBehaviour
     {
         if (!other.CompareTag("Player")) return;
 
+        ButtonSFX2.Play();
         pressed = false;
 
         SetSpriteColor(buttonVisual, buttonStartColor);
