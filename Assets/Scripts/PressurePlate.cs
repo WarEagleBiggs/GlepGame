@@ -48,6 +48,7 @@ public class PressurePlate : MonoBehaviour
 
     public AudioSource ButtonSFX;
     public AudioSource ButtonSFX2;
+    public GameObject ButtonHum;
 
     void Awake()
     {
@@ -170,6 +171,7 @@ public class PressurePlate : MonoBehaviour
         pressed = true;
         
         ButtonSFX.Play();
+        ButtonHum.SetActive(true);
 
         Debug.Log("pressed do action");
 
@@ -185,6 +187,7 @@ public class PressurePlate : MonoBehaviour
 
         ButtonSFX2.Play();
         pressed = false;
+        ButtonHum.SetActive(false);
 
         SetSpriteColor(buttonVisual, buttonStartColor);
 
