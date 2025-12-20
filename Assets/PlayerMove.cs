@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
-public class TopDownPlayerController : MonoBehaviour
+public class PlayerMove : MonoBehaviour
 {
     public Transform gfxRoot;
     public SpriteRenderer spriteRenderer;
@@ -74,13 +74,9 @@ public class TopDownPlayerController : MonoBehaviour
     void FixedUpdate()
     {
         if (input.sqrMagnitude < 0.0001f)
-        {
             rb.velocity = Vector2.zero;
-        }
         else
-        {
             rb.velocity = Vector2.MoveTowards(rb.velocity, targetVel, acceleration * Time.fixedDeltaTime);
-        }
 
         if (animator)
         {
@@ -95,14 +91,21 @@ public class TopDownPlayerController : MonoBehaviour
         if (!eye || !mainCamera || !gfxRoot) return;
 
         Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-        Vector3 mouseLocal = gfxRoot.InverseTransformPoint(new Vector3(mouseWorld.x, mouseWorld.y, gfxRoot.position.z));
-        Vector3 eyeLocal = eye.localPosition;
+        Vector3 mouseLocal3 = gfxRoot.InverseTransformPoint(
+            new Vector3(mouseWorld.x, mouseWorld.y, gfxRoot.position.z)
+        );
+
+        Vector2 mouseLocal = new Vector2(mouseLocal3.x, mouseLocal3.y);
+        Vector2 eyeLocal = new Vector2(eye.localPosition.x, eye.localPosition.y);
+
         Vector2 dir = mouseLocal - eyeLocal;
 
         float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-        Quaternion targetRot = Quaternion.Euler(0f, 0f, angle);
-
-        eye.localRotation = Quaternion.RotateTowards(eye.localRotation, targetRot, eyeTurnSpeed * Time.deltaTime);
+        eye.localRotation = Quaternion.RotateTowards(
+            eye.localRotation,
+            Quaternion.Euler(0f, 0f, angle),
+            eyeTurnSpeed * Time.deltaTime
+        );
     }
 
     void Fire()
@@ -115,7 +118,10 @@ public class TopDownPlayerController : MonoBehaviour
         Vector2 dir = ((Vector2)mouseWorld - (Vector2)spawnPos).normalized;
         if (dir.sqrMagnitude < 0.0001f) dir = Vector2.right;
 
-        GameObject go = Instantiate(bulletPrefab, spawnPos, Quaternion.identity);
+        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+        Quaternion rot = Quaternion.Euler(0f, 0f, angle);
+
+        GameObject go = Instantiate(bulletPrefab, spawnPos, rot);
 
         Rigidbody2D brb = go.GetComponent<Rigidbody2D>();
         if (brb)

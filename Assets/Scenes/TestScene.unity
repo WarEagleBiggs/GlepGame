@@ -591,7 +591,7 @@ GameObject:
   - component: {fileID: 193292877}
   - component: {fileID: 193292880}
   - component: {fileID: 193292878}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Glep - Spit
   m_TagString: Untagged
   m_Icon: {fileID: -964228994112308473, guid: 0000000000000000d000000000000000, type: 0}
@@ -1348,7 +1348,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 333385714}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: gfxRoot
   m_TagString: Untagged
   m_Icon: {fileID: 2800000, guid: e60718119cec31e4190849292fcde068, type: 3}
@@ -1384,7 +1384,7 @@ GameObject:
   m_Component:
   - component: {fileID: 334423510}
   - component: {fileID: 334423511}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Glep - Eye
   m_TagString: Untagged
   m_Icon: {fileID: 2800000, guid: 62ce01ddca719d34ea9648c586a7cc94, type: 3}
@@ -2646,7 +2646,7 @@ GameObject:
   - component: {fileID: 749530609}
   - component: {fileID: 749530608}
   - component: {fileID: 749530610}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: GLEP
   m_TagString: Player
   m_Icon: {fileID: 2800000, guid: 97661c9db738b1c4a95ed3c537145470, type: 3}
@@ -2729,7 +2729,7 @@ MonoBehaviour:
   eyeTurnSpeed: 720
   bulletPrefab: {fileID: 1685134428689573295, guid: d5915bb65a232464d9ebbfa120bfd8a8, type: 3}
   firePoint: {fileID: 1219780902}
-  bulletSpeed: 14
+  bulletSpeed: 30
   fireCooldown: 0.12
   sprintAnimSpeed: 3
 --- !u!50 &749530610
@@ -2934,7 +2934,7 @@ GameObject:
   m_Component:
   - component: {fileID: 759516699}
   - component: {fileID: 759516700}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Pupil - Obj
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3783,7 +3783,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1039596567}
   - component: {fileID: 1039596568}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Shadow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4037,7 +4037,7 @@ GameObject:
   - component: {fileID: 1066134509}
   - component: {fileID: 1066134510}
   - component: {fileID: 1066134511}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Glep - Body
   m_TagString: Untagged
   m_Icon: {fileID: 2800000, guid: 25096ce515c063c48a2bd6b108c95912, type: 3}
@@ -4504,7 +4504,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1219780902}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: ShootPoint
   m_TagString: Untagged
   m_Icon: {fileID: 7174288486110832750, guid: 0000000000000000d000000000000000, type: 0}
