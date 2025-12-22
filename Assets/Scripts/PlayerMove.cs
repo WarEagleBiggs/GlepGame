@@ -1,11 +1,14 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerMove : MonoBehaviour
 {
     public Transform gfxRoot;
     public SpriteRenderer spriteRenderer;
-    public Animator animator;
+    [FormerlySerializedAs("animator")] public Animator bodyAnimator;
+    public Animator headAnimator;
 
     public Transform eye;
     public Camera mainCamera;
@@ -30,13 +33,21 @@ public class PlayerMove : MonoBehaviour
     float fireTimer;
     bool isSprinting;
 
+    public List<GameObject> heads;
+    public bool eyeVisibility;
+    public SpriteRenderer eyeRend;
+
+    public GameObject eyeRenderGO;
+    public string spitStateName = "Spit";
+    public int headAnimatorLayer = 0;
+
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         if (!mainCamera) mainCamera = Camera.main;
         if (!gfxRoot) gfxRoot = transform;
         if (!spriteRenderer) spriteRenderer = gfxRoot.GetComponentInChildren<SpriteRenderer>();
-        if (!animator && spriteRenderer) animator = spriteRenderer.GetComponent<Animator>();
+        if (!bodyAnimator && spriteRenderer) bodyAnimator = spriteRenderer.GetComponent<Animator>();
 
         rb.gravityScale = 0f;
         rb.freezeRotation = true;
@@ -45,6 +56,8 @@ public class PlayerMove : MonoBehaviour
 
     void Update()
     {
+        UpdateEyeRenderVisibility();
+
         input = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
         input = Vector2.ClampMagnitude(input, 1f);
 
@@ -78,12 +91,30 @@ public class PlayerMove : MonoBehaviour
         else
             rb.velocity = Vector2.MoveTowards(rb.velocity, targetVel, acceleration * Time.fixedDeltaTime);
 
-        if (animator)
+        if (bodyAnimator)
         {
             bool isWalking = input.sqrMagnitude > 0.01f;
-            animator.SetBool("isWalking", isWalking);
-            animator.speed = isWalking ? (isSprinting ? sprintAnimSpeed : 1f) : 1f;
+            bodyAnimator.SetBool("isWalking", isWalking);
+            bodyAnimator.speed = isWalking ? (isSprinting ? sprintAnimSpeed : 1f) : 1f;
         }
+    }
+
+    void UpdateEyeRenderVisibility()
+    {
+        bool spitPlaying = false;
+
+        if (headAnimator)
+        {
+            var state = headAnimator.GetCurrentAnimatorStateInfo(headAnimatorLayer);
+            var next = headAnimator.GetNextAnimatorStateInfo(headAnimatorLayer);
+
+            spitPlaying =
+                state.IsName(spitStateName) ||
+                (headAnimator.IsInTransition(headAnimatorLayer) && next.IsName(spitStateName));
+        }
+
+        if (eyeRenderGO) eyeRenderGO.SetActive(!spitPlaying);
+        if (eyeRend) eyeRend.enabled = !spitPlaying;
     }
 
     void UpdateEyeRotation()
@@ -110,6 +141,8 @@ public class PlayerMove : MonoBehaviour
 
     void Fire()
     {
+        if (headAnimator) headAnimator.Play(spitStateName, headAnimatorLayer, 0f);
+
         if (!bulletPrefab || !mainCamera) return;
 
         Vector3 spawnPos = firePoint ? firePoint.position : transform.position;
