@@ -1397,6 +1397,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 326175607}
+  - component: {fileID: 326175608}
   m_Layer: 5
   m_Name: ToolBar
   m_TagString: Untagged
@@ -1434,6 +1435,26 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -450}
   m_SizeDelta: {x: 1000, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &326175608
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 326175606}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4bf7ad988c8901d42b74a22fc7d39f98, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  slotCount: 5
+  CurrSlot: 1
+  slotHighlights:
+  - {fileID: 1285405131}
+  - {fileID: 1396332904}
+  - {fileID: 1021947310}
+  - {fileID: 1322981056}
+  - {fileID: 1281076131}
 --- !u!1 &333385713
 GameObject:
   m_ObjectHideFlags: 0
