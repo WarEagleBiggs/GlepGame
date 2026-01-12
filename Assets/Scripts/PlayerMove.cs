@@ -41,6 +41,10 @@ public class PlayerMove : MonoBehaviour
     public string spitStateName = "Spit";
     public int headAnimatorLayer = 0;
 
+    public float health = 100f;
+    public float damagePerHit = 10f;
+    public Transform healthBarFill;
+
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -57,6 +61,7 @@ public class PlayerMove : MonoBehaviour
     void Update()
     {
         UpdateEyeRenderVisibility();
+        UpdateHealthBar();
 
         input = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
         input = Vector2.ClampMagnitude(input, 1f);
@@ -99,6 +104,33 @@ public class PlayerMove : MonoBehaviour
         }
     }
 
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag("laser"))
+            TakeDamage(damagePerHit);
+    }
+
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("blib"))
+            TakeDamage(damagePerHit);
+    }
+
+    void TakeDamage(float amount)
+    {
+        health = Mathf.Clamp(health - amount, 0f, 100f);
+        UpdateHealthBar();
+    }
+
+    void UpdateHealthBar()
+    {
+        if (!healthBarFill) return;
+
+        Vector3 s = healthBarFill.localScale;
+        s.y = Mathf.Clamp01(health / 100f);
+        healthBarFill.localScale = s;
+    }
+
     void UpdateEyeRenderVisibility()
     {
         bool spitPlaying = false;
@@ -138,6 +170,12 @@ public class PlayerMove : MonoBehaviour
             eyeTurnSpeed * Time.deltaTime
         );
     }
+    public void TakeLaserDamage(float amount)
+    {
+        health = Mathf.Clamp(health - amount, 0f, 100f);
+        UpdateHealthBar();
+    }
+
 
     void Fire()
     {

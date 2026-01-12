@@ -9,7 +9,6 @@ public class LaserTurret2D : MonoBehaviour
     public Mode mode = Mode.Spin;
 
     [Header("Rotation")]
-    [Tooltip("Degrees per second.")]
     public float rotateSpeed = 90f;
 
     [Header("Sweep (degrees)")]
@@ -21,10 +20,17 @@ public class LaserTurret2D : MonoBehaviour
     public float maxDistance = 30f;
     public LayerMask hitMask = ~0;
 
+    [Header("Damage")]
+    public float damagePerTick = 10f;
+    public float damageInterval = 0.25f;
+
     LineRenderer lr;
 
     float currentAngle;
     float targetAngle;
+    float damageTimer;
+
+    int ignoreLayer;
 
     void Awake()
     {
@@ -33,6 +39,8 @@ public class LaserTurret2D : MonoBehaviour
 
         if (!firePoint) firePoint = transform;
 
+        ignoreLayer = gameObject.layer;
+
         currentAngle = NormalizeAngle(transform.eulerAngles.z);
         targetAngle = NormalizeAngle(angleB);
     }
@@ -40,7 +48,7 @@ public class LaserTurret2D : MonoBehaviour
     void Update()
     {
         UpdateRotation();
-        UpdateLaser();
+        UpdateLaserAndDamage();
     }
 
     void UpdateRotation()
@@ -51,7 +59,6 @@ public class LaserTurret2D : MonoBehaviour
             return;
         }
 
-        // Sweep between angleA and angleB in LOCAL space (relative to turret's parent)
         float a = NormalizeAngle(angleA);
         float b = NormalizeAngle(angleB);
 
@@ -59,19 +66,17 @@ public class LaserTurret2D : MonoBehaviour
         transform.localRotation = Quaternion.Euler(0f, 0f, currentAngle);
 
         if (Mathf.Abs(Mathf.DeltaAngle(currentAngle, targetAngle)) < 0.1f)
-        {
             targetAngle = (Mathf.Abs(Mathf.DeltaAngle(targetAngle, a)) < 0.1f) ? b : a;
-        }
     }
 
-    void UpdateLaser()
+    void UpdateLaserAndDamage()
     {
         Vector3 origin = firePoint.position;
-
-        // In 2D top-down, "right" is commonly used as forward direction for sprites.
         Vector2 dir = firePoint.right.normalized;
 
-        RaycastHit2D hit = Physics2D.Raycast(origin, dir, maxDistance, hitMask);
+        int mask = hitMask & ~(1 << ignoreLayer);
+
+        RaycastHit2D hit = Physics2D.Raycast(origin, dir, maxDistance, mask);
 
         Vector3 end = origin + (Vector3)(dir * maxDistance);
         if (hit.collider != null)
@@ -79,6 +84,17 @@ public class LaserTurret2D : MonoBehaviour
 
         lr.SetPosition(0, origin);
         lr.SetPosition(1, end);
+
+        damageTimer -= Time.deltaTime;
+        if (damageTimer > 0f) return;
+
+        if (hit.collider != null && hit.collider.CompareTag("Player"))
+        {
+            PlayerMove pm = hit.collider.GetComponent<PlayerMove>();
+            if (pm) pm.TakeLaserDamage(damagePerTick);
+        }
+
+        damageTimer = damageInterval;
     }
 
     static float NormalizeAngle(float angle)
