@@ -4,31 +4,31 @@ using UnityEngine;
 public class TopDownFollowBehind2D : MonoBehaviour
 {
     [Header("Target / Leader")]
-    public Transform leader;                 // Player, or the previous follower in the chain
+    public Transform leader;
 
     [Header("Follow Spacing")]
-    [Tooltip("How far behind the leader this follower should try to stay (world units).")]
     public float followDistance = 1.2f;
-
-    [Tooltip("Extra spacing so followers don't overlap each other.")]
     public float minSeparation = 0.6f;
 
     [Header("Smoothing / Movement")]
-    [Tooltip("Higher = snappier. Lower = floatier.")]
     public float followSmooth = 10f;
-
-    [Tooltip("Max move speed cap (optional). Set to 0 for no cap.")]
     public float maxSpeed = 0f;
 
     [Header("History Sampling")]
-    [Tooltip("How often we sample the leader position (seconds). Smaller = more accurate, more memory.")]
     public float sampleInterval = 0.02f;
-
-    [Tooltip("How many samples to keep. Must be large enough for your max followDistance.")]
     public int maxSamples = 300;
+
+    [Header("Flip")]
+    public SpriteRenderer sprite;
+    public float flipDeadzone = 0.03f;
+    public float flipHoldSeconds = 0.08f;
 
     private readonly List<Vector3> history = new List<Vector3>();
     private float sampleTimer;
+
+    private Vector3 lastPos;
+    private float moveDirX;
+    private float lastMoveTime;
 
     void Reset()
     {
@@ -37,13 +37,19 @@ public class TopDownFollowBehind2D : MonoBehaviour
         followSmooth = 10f;
         sampleInterval = 0.02f;
         maxSamples = 300;
+        flipDeadzone = 0.03f;
+        flipHoldSeconds = 0.08f;
+    }
+
+    void Start()
+    {
+        lastPos = transform.position;
     }
 
     void LateUpdate()
     {
         if (!leader) return;
 
-        // Sample the leader position into history
         sampleTimer += Time.deltaTime;
         if (sampleTimer >= sampleInterval)
         {
@@ -54,23 +60,16 @@ public class TopDownFollowBehind2D : MonoBehaviour
                 history.RemoveAt(history.Count - 1);
         }
 
-        // If we don't have enough history yet, do nothing
         if (history.Count < 2) return;
 
-        // Find a point in history that is approximately followDistance behind leader
         Vector3 desired = GetPointAlongHistory(followDistance);
 
-        // Enforce a minimum separation (prevents "on top" stacking when stopping/turning)
         Vector3 toDesired = desired - transform.position;
         float distToDesired = toDesired.magnitude;
 
         if (distToDesired < minSeparation && distToDesired > 0.0001f)
-        {
-            // Push back away from desired point slightly to keep space
             desired = transform.position - toDesired.normalized * (minSeparation - distToDesired);
-        }
 
-        // Smoothly move toward desired
         Vector3 next = Vector3.Lerp(transform.position, desired, 1f - Mathf.Exp(-followSmooth * Time.deltaTime));
 
         if (maxSpeed > 0f)
@@ -82,6 +81,33 @@ public class TopDownFollowBehind2D : MonoBehaviour
         }
 
         transform.position = next;
+
+        UpdateFlip(next);
+    }
+
+    private void UpdateFlip(Vector3 newPos)
+    {
+        if (!sprite) return;
+
+        float dx = newPos.x - lastPos.x;
+
+        if (dx <= -flipDeadzone)
+        {
+            moveDirX = -1f;
+            lastMoveTime = Time.time;
+        }
+        else if (dx >= flipDeadzone)
+        {
+            moveDirX = 1f;
+            lastMoveTime = Time.time;
+        }
+
+        if (moveDirX != 0f && (Time.time - lastMoveTime) <= flipHoldSeconds)
+            sprite.flipX = (moveDirX < 0f);
+        else if (moveDirX != 0f)
+            sprite.flipX = (moveDirX < 0f);
+
+        lastPos = newPos;
     }
 
     private Vector3 GetPointAlongHistory(float distanceBack)
@@ -103,7 +129,6 @@ public class TopDownFollowBehind2D : MonoBehaviour
             traveled += seg;
         }
 
-        // Not enough history; return the oldest point
         return history[history.Count - 1];
     }
 }

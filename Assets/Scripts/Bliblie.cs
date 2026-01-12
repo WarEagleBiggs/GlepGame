@@ -22,4 +22,10 @@ public class Bliblie : MonoBehaviour
         if (Vector2.Distance(transform.position, target.position) <= chaseRange)
             agent.SetDestination(target.position);
     }
+
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("spit"))
+            Destroy(gameObject);
+    }
 }
