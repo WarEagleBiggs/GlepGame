@@ -54,7 +54,12 @@ public class PlayerMove : MonoBehaviour
 
     public Volume globalVolume;
 
+    public GameObject winScreen;
+    public GameObject deathScreen;
+
     bool isDead;
+    bool hasWon;
+
     Vignette vignette;
 
     void Awake()
@@ -68,11 +73,14 @@ public class PlayerMove : MonoBehaviour
         ExitAltMode();
 
         if (DeathGuy) DeathGuy.SetActive(false);
+        if (winScreen) winScreen.SetActive(false);
+        if (deathScreen) deathScreen.SetActive(false);
 
         if (globalVolume)
             globalVolume.profile.TryGet(out vignette);
 
         isDead = false;
+        hasWon = false;
     }
 
     void Update()
@@ -80,7 +88,7 @@ public class PlayerMove : MonoBehaviour
         UpdateHealthBar();
         UpdateSpitBar();
 
-        if (isDead)
+        if (isDead || hasWon)
         {
             input = Vector2.zero;
             targetVel = Vector2.zero;
@@ -136,7 +144,7 @@ public class PlayerMove : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (isDead || inAltMode)
+        if (isDead || hasWon || inAltMode)
         {
             rb.velocity = Vector2.zero;
             return;
@@ -175,7 +183,7 @@ public class PlayerMove : MonoBehaviour
 
     void EnterAltMode(GameObject modeGuy)
     {
-        if (isDead || !modeGuy) return;
+        if (isDead || hasWon || !modeGuy) return;
 
         inAltMode = true;
 
@@ -206,7 +214,7 @@ public class PlayerMove : MonoBehaviour
 
     void FireSpitMouseAimed()
     {
-        if (isDead) return;
+        if (isDead || hasWon) return;
         if (!bulletPrefab || !mainCamera) return;
 
         Vector3 spawnPos = firePoint ? firePoint.position : transform.position;
@@ -230,7 +238,7 @@ public class PlayerMove : MonoBehaviour
 
     void UpdateEyeRotation()
     {
-        if (isDead || !eye || !mainCamera || inAltMode) return;
+        if (isDead || hasWon || !eye || !mainCamera || inAltMode) return;
 
         Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Input.mousePosition);
         Vector3 dir = mouseWorld - eye.position;
@@ -245,7 +253,13 @@ public class PlayerMove : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (isDead) return;
+        if (isDead || hasWon) return;
+
+        if (other.CompareTag("win"))
+        {
+            Win();
+            return;
+        }
 
         if (other.CompareTag("laser"))
             TakeDamage(damagePerHit);
@@ -253,7 +267,7 @@ public class PlayerMove : MonoBehaviour
 
     void OnCollisionEnter2D(Collision2D collision)
     {
-        if (isDead) return;
+        if (isDead || hasWon) return;
 
         if (collision.gameObject.CompareTag("blib"))
             TakeDamage(damagePerHit);
@@ -261,13 +275,25 @@ public class PlayerMove : MonoBehaviour
 
     public void TakeDamage(float amount)
     {
-        if (isDead) return;
+        if (isDead || hasWon) return;
 
         health = Mathf.Clamp(health - amount, 0f, 100f);
         UpdateHealthBar();
 
         if (health <= 0f)
             Die();
+    }
+
+    void Win()
+    {
+        hasWon = true;
+        ExitAltMode();
+
+        input = Vector2.zero;
+        targetVel = Vector2.zero;
+        rb.velocity = Vector2.zero;
+
+        if (winScreen) winScreen.SetActive(true);
     }
 
     void Die()
@@ -288,6 +314,8 @@ public class PlayerMove : MonoBehaviour
 
         if (vignette != null)
             vignette.intensity.value = 0.8f;
+
+        if (deathScreen) deathScreen.SetActive(true);
     }
 
     void UpdateHealthBar()
