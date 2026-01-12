@@ -30,4 +30,11 @@ public class SceneMaster : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Y))
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
+
+    public GameObject AssetsScreen;
+    
+    public void AssetsMenu()
+    {
+        AssetsScreen.SetActive(!AssetsScreen.activeSelf);
+    }
 }
