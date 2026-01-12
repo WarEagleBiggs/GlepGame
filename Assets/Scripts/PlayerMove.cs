@@ -40,6 +40,8 @@ public class PlayerMove : MonoBehaviour
     public float damagePerHit = 10f;
     public Transform healthBarFill;
 
+    public float healthRegenPerSecond = 4f;
+
     public float spitMeter = 100f;
     public float spitCost = 10f;
     public float spitRegenPerSecond = 12f;
@@ -85,6 +87,9 @@ public class PlayerMove : MonoBehaviour
             return;
         }
 
+        health = Mathf.Clamp(health + healthRegenPerSecond * Time.deltaTime, 0f, 100f);
+        spitMeter = Mathf.Clamp(spitMeter + spitRegenPerSecond * Time.deltaTime, 0f, 100f);
+
         if (inAltMode)
         {
             if (AnyInputPressed())
@@ -103,7 +108,6 @@ public class PlayerMove : MonoBehaviour
 
         UpdateEyeRotation();
 
-        spitMeter = Mathf.Clamp(spitMeter + spitRegenPerSecond * Time.deltaTime, 0f, 100f);
         fireTimer -= Time.deltaTime;
 
         if (toolBar && Input.GetMouseButtonDown(0))
