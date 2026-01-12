@@ -91,7 +91,7 @@ public class LaserTurret2D : MonoBehaviour
         if (hit.collider != null && hit.collider.CompareTag("Player"))
         {
             PlayerMove pm = hit.collider.GetComponent<PlayerMove>();
-            if (pm) pm.TakeLaserDamage(damagePerTick);
+            if (pm) pm.TakeDamage(damagePerTick);
         }
 
         damageTimer = damageInterval;

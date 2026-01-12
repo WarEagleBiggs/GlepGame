@@ -1,14 +1,10 @@
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerMove : MonoBehaviour
 {
     public Transform gfxRoot;
-    public SpriteRenderer spriteRenderer;
-    [FormerlySerializedAs("animator")] public Animator bodyAnimator;
-    public Animator headAnimator;
+    public Animator bodyAnimator;
 
     public Transform eye;
     public Camera mainCamera;
@@ -33,65 +29,65 @@ public class PlayerMove : MonoBehaviour
     float fireTimer;
     bool isSprinting;
 
-    Vector2 lastMoveDir = Vector2.right;
+    public GameObject mainGuy;
+    public GameObject ipadGuy;
+    public GameObject danceGuy;
+    bool inAltMode;
 
-    public GameObject eyeRenderGO;
-    public SpriteRenderer eyeRend;
-
-    public string spitStateName = "Spit";
-    public string ipadStateName = "iPad";
-    public string danceStateName = "Dance";
-    public string throwChildStateName = "ThrowChild";
-    public int headAnimatorLayer = 0;
-
-    [Header("Health")]
     public float health = 100f;
     public float damagePerHit = 10f;
     public Transform healthBarFill;
 
-    [Header("Spit Meter")]
     public float spitMeter = 100f;
     public float spitCost = 10f;
     public float spitRegenPerSecond = 12f;
     public Transform spitBarFill;
 
-    [Header("Toolbar")]
     public ToolBar toolBar;
+
+    public Animator DeathAnim;
+    public GameObject DeathGuy;
+
+    bool isDead;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         if (!mainCamera) mainCamera = Camera.main;
-        if (!gfxRoot) gfxRoot = transform;
-
         rb.gravityScale = 0f;
         rb.freezeRotation = true;
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+        ExitAltMode();
+        if (DeathGuy) DeathGuy.SetActive(false);
+        isDead = false;
     }
 
     void Update()
     {
         UpdateHealthBar();
         UpdateSpitBar();
-        UpdateEyeRenderVisibility();
+
+        if (isDead)
+        {
+            input = Vector2.zero;
+            targetVel = Vector2.zero;
+            return;
+        }
+
+        if (inAltMode)
+        {
+            if (AnyInputPressed())
+                ExitAltMode();
+            return;
+        }
 
         input = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
         input = Vector2.ClampMagnitude(input, 1f);
 
-        if (input.sqrMagnitude > 0.001f)
-            lastMoveDir = input.normalized;
+        UpdateFacing();
 
         isSprinting = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         float speed = isSprinting ? moveSpeed * sprintMultiplier : moveSpeed;
-
-        if (gfxRoot)
-        {
-            Vector3 s = gfxRoot.localScale;
-            if (lastMoveDir.x > mirrorDeadzone) s.x = -Mathf.Abs(s.x);
-            else if (lastMoveDir.x < -mirrorDeadzone) s.x = Mathf.Abs(s.x);
-            gfxRoot.localScale = s;
-        }
-
         targetVel = input * speed;
 
         UpdateEyeRotation();
@@ -99,11 +95,11 @@ public class PlayerMove : MonoBehaviour
         spitMeter = Mathf.Clamp(spitMeter + spitRegenPerSecond * Time.deltaTime, 0f, 100f);
         fireTimer -= Time.deltaTime;
 
-        if (toolBar && Input.GetMouseButton(0))
+        if (toolBar && Input.GetMouseButtonDown(0))
         {
-            int action = toolBar.CurrSlot;
+            int slot = toolBar.CurrSlot;
 
-            if (action == 1)
+            if (slot == 1)
             {
                 if (fireTimer <= 0f && spitMeter >= spitCost)
                 {
@@ -112,17 +108,25 @@ public class PlayerMove : MonoBehaviour
                     fireTimer = fireCooldown;
                 }
             }
-            else if (action == 2 && headAnimator)
-                headAnimator.Play(ipadStateName, headAnimatorLayer, 0f);
-            else if (action == 3 && headAnimator)
-                headAnimator.Play(danceStateName, headAnimatorLayer, 0f);
-            else if (action == 4 && headAnimator)
-                headAnimator.Play(throwChildStateName, headAnimatorLayer, 0f);
+            else if (slot == 2)
+            {
+                EnterAltMode(ipadGuy);
+            }
+            else if (slot == 3)
+            {
+                EnterAltMode(danceGuy);
+            }
         }
     }
 
     void FixedUpdate()
     {
+        if (isDead || inAltMode)
+        {
+            rb.velocity = Vector2.zero;
+            return;
+        }
+
         if (input.sqrMagnitude < 0.0001f)
             rb.velocity = Vector2.zero;
         else
@@ -136,26 +140,66 @@ public class PlayerMove : MonoBehaviour
         }
     }
 
+    void UpdateFacing()
+    {
+        if (!gfxRoot) return;
+
+        if (input.x > mirrorDeadzone)
+        {
+            Vector3 s = gfxRoot.localScale;
+            s.x = -Mathf.Abs(s.x);
+            gfxRoot.localScale = s;
+        }
+        else if (input.x < -mirrorDeadzone)
+        {
+            Vector3 s = gfxRoot.localScale;
+            s.x = Mathf.Abs(s.x);
+            gfxRoot.localScale = s;
+        }
+    }
+
+    void EnterAltMode(GameObject modeGuy)
+    {
+        if (isDead || !modeGuy) return;
+        inAltMode = true;
+        if (mainGuy) mainGuy.SetActive(false);
+        if (ipadGuy) ipadGuy.SetActive(false);
+        if (danceGuy) danceGuy.SetActive(false);
+        modeGuy.SetActive(true);
+    }
+
+    void ExitAltMode()
+    {
+        inAltMode = false;
+        if (mainGuy) mainGuy.SetActive(true);
+        if (ipadGuy) ipadGuy.SetActive(false);
+        if (danceGuy) danceGuy.SetActive(false);
+    }
+
+    bool AnyInputPressed()
+    {
+        return Input.anyKeyDown ||
+               Mathf.Abs(Input.GetAxisRaw("Horizontal")) > 0.01f ||
+               Mathf.Abs(Input.GetAxisRaw("Vertical")) > 0.01f ||
+               Input.GetMouseButtonDown(0) ||
+               Input.GetMouseButtonDown(1);
+    }
+
     void FireSpitMouseAimed()
     {
-        if (headAnimator)
-            headAnimator.Play(spitStateName, headAnimatorLayer, 0f);
-
+        if (isDead) return;
         if (!bulletPrefab || !mainCamera) return;
 
         Vector3 spawnPos = firePoint ? firePoint.position : transform.position;
-
         Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Input.mousePosition);
         mouseWorld.z = spawnPos.z;
 
-        Vector2 dir = (Vector2)(mouseWorld - spawnPos);
+        Vector2 dir = mouseWorld - spawnPos;
         if (dir.sqrMagnitude < 0.0001f) dir = Vector2.right;
         dir.Normalize();
 
         float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-        Quaternion rot = Quaternion.Euler(0f, 0f, angle);
-
-        GameObject go = Instantiate(bulletPrefab, spawnPos, rot);
+        GameObject go = Instantiate(bulletPrefab, spawnPos, Quaternion.Euler(0f, 0f, angle));
 
         Rigidbody2D brb = go.GetComponent<Rigidbody2D>();
         if (brb)
@@ -167,59 +211,61 @@ public class PlayerMove : MonoBehaviour
 
     void UpdateEyeRotation()
     {
-        if (!eye || !mainCamera || !gfxRoot) return;
+        if (isDead || !eye || !mainCamera || inAltMode) return;
 
         Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-
-        Vector3 mouseLocal3 = gfxRoot.InverseTransformPoint(
-            new Vector3(mouseWorld.x, mouseWorld.y, gfxRoot.position.z)
-        );
-
-        Vector2 mouseLocal = new Vector2(mouseLocal3.x, mouseLocal3.y);
-        Vector2 eyeLocal = eye.localPosition;
-
-        Vector2 dir = mouseLocal - eyeLocal;
+        Vector3 dir = mouseWorld - eye.position;
 
         float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-        eye.localRotation = Quaternion.RotateTowards(
-            eye.localRotation,
+        eye.rotation = Quaternion.RotateTowards(
+            eye.rotation,
             Quaternion.Euler(0f, 0f, angle),
             eyeTurnSpeed * Time.deltaTime
         );
     }
 
-    void UpdateEyeRenderVisibility()
-    {
-        if (!headAnimator) return;
-
-        var state = headAnimator.GetCurrentAnimatorStateInfo(headAnimatorLayer);
-        bool spitPlaying = state.IsName(spitStateName);
-
-        if (eyeRenderGO) eyeRenderGO.SetActive(!spitPlaying);
-        if (eyeRend) eyeRend.enabled = !spitPlaying;
-    }
-
     void OnTriggerEnter2D(Collider2D other)
     {
+        if (isDead) return;
+
         if (other.CompareTag("laser"))
             TakeDamage(damagePerHit);
     }
 
     void OnCollisionEnter2D(Collision2D collision)
     {
+        if (isDead) return;
+
         if (collision.gameObject.CompareTag("blib"))
             TakeDamage(damagePerHit);
     }
 
     public void TakeDamage(float amount)
     {
+        if (isDead) return;
+
         health = Mathf.Clamp(health - amount, 0f, 100f);
         UpdateHealthBar();
+
+        if (health <= 0f)
+            Die();
     }
 
-    public void TakeLaserDamage(float amount)
+    void Die()
     {
-        TakeDamage(amount);
+        isDead = true;
+        ExitAltMode();
+
+        input = Vector2.zero;
+        targetVel = Vector2.zero;
+        rb.velocity = Vector2.zero;
+
+        if (mainGuy) mainGuy.SetActive(false);
+        if (ipadGuy) ipadGuy.SetActive(false);
+        if (danceGuy) danceGuy.SetActive(false);
+
+        if (DeathGuy) DeathGuy.SetActive(true);
+        if (DeathAnim) DeathAnim.Play("Death");
     }
 
     void UpdateHealthBar()
