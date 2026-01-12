@@ -1,11 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class ToolBar : MonoBehaviour
 {
     [Header("Toolbar Settings")]
-    public int slotCount = 5;
+    public int slotCount = 4;
     public int CurrSlot = 1;
 
     [Header("Slot Highlight Objects (size = slotCount)")]
@@ -42,8 +40,6 @@ public class ToolBar : MonoBehaviour
     void UpdateVisuals()
     {
         for (int i = 0; i < slotHighlights.Length; i++)
-        {
             slotHighlights[i].SetActive(i == CurrSlot - 1);
-        }
     }
 }

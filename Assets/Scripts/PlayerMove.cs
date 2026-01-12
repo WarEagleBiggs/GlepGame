@@ -13,9 +13,9 @@ public class PlayerMove : MonoBehaviour
     public Transform eye;
     public Camera mainCamera;
 
-    public float moveSpeed = 6.0f;
+    public float moveSpeed = 6f;
     public float sprintMultiplier = 1.6f;
-    public float acceleration = 35.0f;
+    public float acceleration = 35f;
 
     public float mirrorDeadzone = 0.05f;
     public float eyeTurnSpeed = 720f;
@@ -33,25 +33,36 @@ public class PlayerMove : MonoBehaviour
     float fireTimer;
     bool isSprinting;
 
-    public List<GameObject> heads;
-    public bool eyeVisibility;
-    public SpriteRenderer eyeRend;
+    Vector2 lastMoveDir = Vector2.right;
 
     public GameObject eyeRenderGO;
+    public SpriteRenderer eyeRend;
+
     public string spitStateName = "Spit";
+    public string ipadStateName = "iPad";
+    public string danceStateName = "Dance";
+    public string throwChildStateName = "ThrowChild";
     public int headAnimatorLayer = 0;
 
+    [Header("Health")]
     public float health = 100f;
     public float damagePerHit = 10f;
     public Transform healthBarFill;
+
+    [Header("Spit Meter")]
+    public float spitMeter = 100f;
+    public float spitCost = 10f;
+    public float spitRegenPerSecond = 12f;
+    public Transform spitBarFill;
+
+    [Header("Toolbar")]
+    public ToolBar toolBar;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         if (!mainCamera) mainCamera = Camera.main;
         if (!gfxRoot) gfxRoot = transform;
-        if (!spriteRenderer) spriteRenderer = gfxRoot.GetComponentInChildren<SpriteRenderer>();
-        if (!bodyAnimator && spriteRenderer) bodyAnimator = spriteRenderer.GetComponent<Animator>();
 
         rb.gravityScale = 0f;
         rb.freezeRotation = true;
@@ -60,11 +71,15 @@ public class PlayerMove : MonoBehaviour
 
     void Update()
     {
-        UpdateEyeRenderVisibility();
         UpdateHealthBar();
+        UpdateSpitBar();
+        UpdateEyeRenderVisibility();
 
         input = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
         input = Vector2.ClampMagnitude(input, 1f);
+
+        if (input.sqrMagnitude > 0.001f)
+            lastMoveDir = input.normalized;
 
         isSprinting = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         float speed = isSprinting ? moveSpeed * sprintMultiplier : moveSpeed;
@@ -72,8 +87,8 @@ public class PlayerMove : MonoBehaviour
         if (gfxRoot)
         {
             Vector3 s = gfxRoot.localScale;
-            if (input.x > mirrorDeadzone) s.x = -Mathf.Abs(s.x);
-            else if (input.x < -mirrorDeadzone) s.x = Mathf.Abs(s.x);
+            if (lastMoveDir.x > mirrorDeadzone) s.x = -Mathf.Abs(s.x);
+            else if (lastMoveDir.x < -mirrorDeadzone) s.x = Mathf.Abs(s.x);
             gfxRoot.localScale = s;
         }
 
@@ -81,11 +96,28 @@ public class PlayerMove : MonoBehaviour
 
         UpdateEyeRotation();
 
+        spitMeter = Mathf.Clamp(spitMeter + spitRegenPerSecond * Time.deltaTime, 0f, 100f);
         fireTimer -= Time.deltaTime;
-        if (Input.GetMouseButton(0) && fireTimer <= 0f)
+
+        if (toolBar && Input.GetMouseButton(0))
         {
-            Fire();
-            fireTimer = fireCooldown;
+            int action = toolBar.CurrSlot;
+
+            if (action == 1)
+            {
+                if (fireTimer <= 0f && spitMeter >= spitCost)
+                {
+                    FireSpitMouseAimed();
+                    spitMeter -= spitCost;
+                    fireTimer = fireCooldown;
+                }
+            }
+            else if (action == 2 && headAnimator)
+                headAnimator.Play(ipadStateName, headAnimatorLayer, 0f);
+            else if (action == 3 && headAnimator)
+                headAnimator.Play(danceStateName, headAnimatorLayer, 0f);
+            else if (action == 4 && headAnimator)
+                headAnimator.Play(throwChildStateName, headAnimatorLayer, 0f);
         }
     }
 
@@ -104,6 +136,69 @@ public class PlayerMove : MonoBehaviour
         }
     }
 
+    void FireSpitMouseAimed()
+    {
+        if (headAnimator)
+            headAnimator.Play(spitStateName, headAnimatorLayer, 0f);
+
+        if (!bulletPrefab || !mainCamera) return;
+
+        Vector3 spawnPos = firePoint ? firePoint.position : transform.position;
+
+        Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Input.mousePosition);
+        mouseWorld.z = spawnPos.z;
+
+        Vector2 dir = (Vector2)(mouseWorld - spawnPos);
+        if (dir.sqrMagnitude < 0.0001f) dir = Vector2.right;
+        dir.Normalize();
+
+        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+        Quaternion rot = Quaternion.Euler(0f, 0f, angle);
+
+        GameObject go = Instantiate(bulletPrefab, spawnPos, rot);
+
+        Rigidbody2D brb = go.GetComponent<Rigidbody2D>();
+        if (brb)
+        {
+            brb.gravityScale = 0f;
+            brb.velocity = dir * bulletSpeed;
+        }
+    }
+
+    void UpdateEyeRotation()
+    {
+        if (!eye || !mainCamera || !gfxRoot) return;
+
+        Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Input.mousePosition);
+
+        Vector3 mouseLocal3 = gfxRoot.InverseTransformPoint(
+            new Vector3(mouseWorld.x, mouseWorld.y, gfxRoot.position.z)
+        );
+
+        Vector2 mouseLocal = new Vector2(mouseLocal3.x, mouseLocal3.y);
+        Vector2 eyeLocal = eye.localPosition;
+
+        Vector2 dir = mouseLocal - eyeLocal;
+
+        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+        eye.localRotation = Quaternion.RotateTowards(
+            eye.localRotation,
+            Quaternion.Euler(0f, 0f, angle),
+            eyeTurnSpeed * Time.deltaTime
+        );
+    }
+
+    void UpdateEyeRenderVisibility()
+    {
+        if (!headAnimator) return;
+
+        var state = headAnimator.GetCurrentAnimatorStateInfo(headAnimatorLayer);
+        bool spitPlaying = state.IsName(spitStateName);
+
+        if (eyeRenderGO) eyeRenderGO.SetActive(!spitPlaying);
+        if (eyeRend) eyeRend.enabled = !spitPlaying;
+    }
+
     void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("laser"))
@@ -116,91 +211,30 @@ public class PlayerMove : MonoBehaviour
             TakeDamage(damagePerHit);
     }
 
-    void TakeDamage(float amount)
+    public void TakeDamage(float amount)
     {
         health = Mathf.Clamp(health - amount, 0f, 100f);
         UpdateHealthBar();
+    }
+
+    public void TakeLaserDamage(float amount)
+    {
+        TakeDamage(amount);
     }
 
     void UpdateHealthBar()
     {
         if (!healthBarFill) return;
-
         Vector3 s = healthBarFill.localScale;
         s.y = Mathf.Clamp01(health / 100f);
         healthBarFill.localScale = s;
     }
 
-    void UpdateEyeRenderVisibility()
+    void UpdateSpitBar()
     {
-        bool spitPlaying = false;
-
-        if (headAnimator)
-        {
-            var state = headAnimator.GetCurrentAnimatorStateInfo(headAnimatorLayer);
-            var next = headAnimator.GetNextAnimatorStateInfo(headAnimatorLayer);
-
-            spitPlaying =
-                state.IsName(spitStateName) ||
-                (headAnimator.IsInTransition(headAnimatorLayer) && next.IsName(spitStateName));
-        }
-
-        if (eyeRenderGO) eyeRenderGO.SetActive(!spitPlaying);
-        if (eyeRend) eyeRend.enabled = !spitPlaying;
-    }
-
-    void UpdateEyeRotation()
-    {
-        if (!eye || !mainCamera || !gfxRoot) return;
-
-        Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-        Vector3 mouseLocal3 = gfxRoot.InverseTransformPoint(
-            new Vector3(mouseWorld.x, mouseWorld.y, gfxRoot.position.z)
-        );
-
-        Vector2 mouseLocal = new Vector2(mouseLocal3.x, mouseLocal3.y);
-        Vector2 eyeLocal = new Vector2(eye.localPosition.x, eye.localPosition.y);
-
-        Vector2 dir = mouseLocal - eyeLocal;
-
-        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-        eye.localRotation = Quaternion.RotateTowards(
-            eye.localRotation,
-            Quaternion.Euler(0f, 0f, angle),
-            eyeTurnSpeed * Time.deltaTime
-        );
-    }
-    public void TakeLaserDamage(float amount)
-    {
-        health = Mathf.Clamp(health - amount, 0f, 100f);
-        UpdateHealthBar();
-    }
-
-
-    void Fire()
-    {
-        if (headAnimator) headAnimator.Play(spitStateName, headAnimatorLayer, 0f);
-
-        if (!bulletPrefab || !mainCamera) return;
-
-        Vector3 spawnPos = firePoint ? firePoint.position : transform.position;
-
-        Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-        Vector2 dir = ((Vector2)mouseWorld - (Vector2)spawnPos).normalized;
-        if (dir.sqrMagnitude < 0.0001f) dir = Vector2.right;
-
-        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-        Quaternion rot = Quaternion.Euler(0f, 0f, angle);
-
-        GameObject go = Instantiate(bulletPrefab, spawnPos, rot);
-
-        Rigidbody2D brb = go.GetComponent<Rigidbody2D>();
-        if (brb)
-        {
-            brb.gravityScale = 0f;
-            brb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-            brb.interpolation = RigidbodyInterpolation2D.Interpolate;
-            brb.velocity = dir * bulletSpeed;
-        }
+        if (!spitBarFill) return;
+        Vector3 s = spitBarFill.localScale;
+        s.y = Mathf.Clamp01(spitMeter / 100f);
+        spitBarFill.localScale = s;
     }
 }
