@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -62,6 +63,12 @@ public class PlayerMove : MonoBehaviour
 
     Vignette vignette;
 
+    public Animator headAnimator;
+    public string headSpitStateName = "Spit";
+
+    bool isSpitting;
+    Coroutine spitRoutine;
+
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -81,6 +88,8 @@ public class PlayerMove : MonoBehaviour
 
         isDead = false;
         hasWon = false;
+
+        if (eye) eye.gameObject.SetActive(true);
     }
 
     void Update()
@@ -124,7 +133,7 @@ public class PlayerMove : MonoBehaviour
 
             if (slot == 1)
             {
-                if (fireTimer <= 0f && spitMeter >= spitCost)
+                if (!isSpitting && fireTimer <= 0f && spitMeter >= spitCost)
                 {
                     FireSpitMouseAimed();
                     spitMeter -= spitCost;
@@ -217,6 +226,12 @@ public class PlayerMove : MonoBehaviour
         if (isDead || hasWon) return;
         if (!bulletPrefab || !mainCamera) return;
 
+        if (headAnimator && !string.IsNullOrEmpty(headSpitStateName))
+        {
+            if (spitRoutine != null) StopCoroutine(spitRoutine);
+            spitRoutine = StartCoroutine(SpitAnimRoutine_PlayState());
+        }
+
         Vector3 spawnPos = firePoint ? firePoint.position : transform.position;
         Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Input.mousePosition);
         mouseWorld.z = spawnPos.z;
@@ -236,9 +251,48 @@ public class PlayerMove : MonoBehaviour
         }
     }
 
+    IEnumerator SpitAnimRoutine_PlayState()
+    {
+        isSpitting = true;
+
+        if (eye) eye.gameObject.SetActive(false);
+
+        headAnimator.Play(headSpitStateName, 0, 0f);
+        headAnimator.Update(0f);
+
+        yield return null;
+
+        float timeout = 0.25f;
+        float t = 0f;
+        AnimatorStateInfo st = headAnimator.GetCurrentAnimatorStateInfo(0);
+        while (!st.IsName(headSpitStateName) && t < timeout)
+        {
+            t += Time.deltaTime;
+            yield return null;
+            st = headAnimator.GetCurrentAnimatorStateInfo(0);
+        }
+
+        float speed = Mathf.Max(0.01f, headAnimator.speed);
+        float wait = Mathf.Max(0.01f, st.length / speed);
+
+        float elapsed = 0f;
+        while (elapsed < wait)
+        {
+            if (isDead || hasWon) break;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (!isDead && !hasWon && eye) eye.gameObject.SetActive(true);
+
+        isSpitting = false;
+        spitRoutine = null;
+    }
+
     void UpdateEyeRotation()
     {
         if (isDead || hasWon || !eye || !mainCamera || inAltMode) return;
+        if (!eye.gameObject.activeInHierarchy) return;
 
         Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Input.mousePosition);
         Vector3 dir = mouseWorld - eye.position;
@@ -293,6 +347,10 @@ public class PlayerMove : MonoBehaviour
         targetVel = Vector2.zero;
         rb.velocity = Vector2.zero;
 
+        if (spitRoutine != null) StopCoroutine(spitRoutine);
+        isSpitting = false;
+        if (eye) eye.gameObject.SetActive(true);
+
         if (winScreen) winScreen.SetActive(true);
     }
 
@@ -304,6 +362,10 @@ public class PlayerMove : MonoBehaviour
         input = Vector2.zero;
         targetVel = Vector2.zero;
         rb.velocity = Vector2.zero;
+
+        if (spitRoutine != null) StopCoroutine(spitRoutine);
+        isSpitting = false;
+        if (eye) eye.gameObject.SetActive(true);
 
         if (mainGuy) mainGuy.SetActive(false);
         if (ipadGuy) ipadGuy.SetActive(false);
