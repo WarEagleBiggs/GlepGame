@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerMove : MonoBehaviour
@@ -48,7 +50,10 @@ public class PlayerMove : MonoBehaviour
     public Animator DeathAnim;
     public GameObject DeathGuy;
 
+    public Volume globalVolume;
+
     bool isDead;
+    Vignette vignette;
 
     void Awake()
     {
@@ -57,8 +62,14 @@ public class PlayerMove : MonoBehaviour
         rb.gravityScale = 0f;
         rb.freezeRotation = true;
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+
         ExitAltMode();
+
         if (DeathGuy) DeathGuy.SetActive(false);
+
+        if (globalVolume)
+            globalVolume.profile.TryGet(out vignette);
+
         isDead = false;
     }
 
@@ -161,16 +172,20 @@ public class PlayerMove : MonoBehaviour
     void EnterAltMode(GameObject modeGuy)
     {
         if (isDead || !modeGuy) return;
+
         inAltMode = true;
+
         if (mainGuy) mainGuy.SetActive(false);
         if (ipadGuy) ipadGuy.SetActive(false);
         if (danceGuy) danceGuy.SetActive(false);
+
         modeGuy.SetActive(true);
     }
 
     void ExitAltMode()
     {
         inAltMode = false;
+
         if (mainGuy) mainGuy.SetActive(true);
         if (ipadGuy) ipadGuy.SetActive(false);
         if (danceGuy) danceGuy.SetActive(false);
@@ -266,6 +281,9 @@ public class PlayerMove : MonoBehaviour
 
         if (DeathGuy) DeathGuy.SetActive(true);
         if (DeathAnim) DeathAnim.Play("Death");
+
+        if (vignette != null)
+            vignette.intensity.value = 0.8f;
     }
 
     void UpdateHealthBar()
